@@ -1,0 +1,710 @@
+<!DOCTYPE html>
+<html lang="ta">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Stock Management System + QR — with Login</title>
+  <style>
+    :root { --bg:#0b1220; --card:#111a2b; --muted:#7382a3; --text:#e8ecf4; --accent:#5b9cff; --accent-2:#6ee7b7; --danger:#ef4444; --warning:#f59e0b; --shadow:0 10px 25px rgba(0,0,0,.35); --radius:16px; }
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji"; background: radial-gradient(1200px 800px at 10% -10%, #1a2742 0, transparent 60%), radial-gradient(900px 600px at 110% 10%, #17223a 0, transparent 60%), var(--bg); color: var(--text); min-height: 100vh; }
+
+    /* Login screen */
+    .login-root { min-height:100vh; display:flex; align-items:center; justify-content:center; padding:24px; }
+    .login-box { width:100%; max-width:420px; background:linear-gradient(180deg, rgba(255,255,255,.02), rgba(255,255,255,.01)); border:1px solid rgba(255,255,255,.06); padding:24px; border-radius:14px; box-shadow:var(--shadow); }
+    .login-box h2 { margin:0 0 8px; }
+    .form-row { margin-bottom:12px; }
+    input[type="text"], input[type="password"] { width:100%; padding:12px; border-radius:10px; border:1px solid rgba(255,255,255,.08); background:#0f1729; color:var(--text); }
+    .muted { color:var(--muted); font-size:13px; }
+    .login-actions { display:flex; gap:8px; align-items:center; margin-top:12px; }
+    .btn { cursor: pointer; border: none; padding: 10px 14px; border-radius: 12px; color: white; background: var(--accent); transition: transform .05s ease; box-shadow: 0 6px 14px rgba(91,156,255,.25); }
+    .btn.secondary { background: #233150; color: #e6eeff; box-shadow: none; border: 1px solid rgba(255,255,255,.12); }
+    .btn.danger { background: var(--danger); }
+    .btn.success { background: var(--accent-2); color:#0b1220; }
+    .btn.ghost { background: transparent; color:#e6eeff; border:1px dashed rgba(255,255,255,.25); box-shadow:none; }
+
+    /* App layout */
+    header { max-width: 1100px; margin: 24px auto 10px; padding: 0 16px; display:flex; gap:12px; align-items:center; justify-content:space-between; }
+    .title { display:flex; align-items:center; gap:12px; flex-wrap:wrap; }
+    .badge { font-size: 12px; color: var(--accent-2); background: rgba(110,231,183,.12); padding: 6px 10px; border-radius: 999px; border: 1px solid rgba(110,231,183,.35); }
+    .container { max-width: 1100px; margin: 0 auto; padding: 0 16px 48px; }
+    .grid { display: grid; grid-template-columns: 1fr; gap: 16px; }
+    @media (min-width: 1200px){ .grid { grid-template-columns: 380px 1fr; } }
+
+    .card { background: linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,.01)); border: 1px solid rgba(255,255,255,.08); border-radius: var(--radius); box-shadow: var(--shadow); }
+    .form { padding: 18px; }
+    .row { display:grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px; }
+    .row3 { grid-template-columns: 1fr 1fr 1fr; }
+    .row1 { grid-template-columns: 1fr; }
+    label { font-size: 12px; color: var(--muted); display:block; margin-bottom:6px; }
+    input, select { width: 100%; padding: 12px 12px; border-radius: 12px; border: 1px solid rgba(255,255,255,.12); background: #0f1729; color: var(--text); outline: none; }
+    input::placeholder { color: #95a4c7; opacity: .6; }
+
+    .toolbar { display:flex; flex-wrap: wrap; gap: 8px; align-items:center; padding: 12px 16px; border-bottom: 1px solid rgba(255,255,255,.08); }
+    .toolbar .spacer { flex: 1; }
+    .search { position: relative; }
+    .search input { padding-left: 34px; }
+    .search svg { position:absolute; left:10px; top:50%; transform: translateY(-50%); opacity: .6; }
+
+    .tablewrap { overflow:auto; }
+    table { width: 100%; border-collapse: separate; border-spacing: 0; }
+    thead th { position: sticky; top: 0; background: #0f1628; border-bottom: 1px solid rgba(255,255,255,.08); font-size: 12px; color: #b7c6e6; text-align:left; padding: 12px; white-space: nowrap; cursor: pointer; }
+    tbody td { border-bottom: 1px solid rgba(255,255,255,.06); padding: 12px; font-size: 14px; }
+    tbody tr:hover { background: rgba(255,255,255,.02); }
+    .pill { display:inline-block; padding: 4px 10px; border-radius: 999px; background: rgba(91,156,255,.12); border: 1px solid rgba(91,156,255,.35); color: #cfe0ff; font-size: 12px; }
+    .qtybox { display:inline-flex; align-items:center; gap:6px; background:#0b1323; border:1px solid rgba(255,255,255,.12); border-radius: 10px; padding: 4px; }
+    .qtybox button { border:none; background:#1c2740; color:#d7e5ff; width:26px; height:26px; border-radius:8px; cursor:pointer; }
+    .footerbar { display:flex; gap: 8px; justify-content:flex-end; padding: 12px 16px; border-top: 1px solid rgba(255,255,255,.08); }
+    .empty { text-align:center; color: var(--muted); padding: 28px 12px; }
+    .statbar { display:grid; grid-template-columns: repeat(3, 1fr); gap: 12px; padding: 12px 16px; }
+    .stat { background: #0f1729; border: 1px solid rgba(255,255,255,.08); padding: 14px; border-radius: 12px; text-align:center; }
+    .stat .v { font-size: 20px; font-weight: 700; }
+
+    dialog { border: none; padding: 0; width: 600px; max-width: calc(100% - 24px); background: var(--card); color: var(--text); border-radius: 16px; box-shadow: var(--shadow); }
+    dialog::backdrop { background: rgba(0,0,0,.6); }
+    .modal-head { display:flex; align-items:center; justify-content:space-between; padding: 14px 16px; border-bottom: 1px solid rgba(255,255,255,.08); }
+    .modal-body { padding: 16px; }
+    .qrbox { display:flex; gap:16px; align-items:flex-start; flex-wrap:wrap; }
+    .qrpanel { background:#0f1729; border:1px solid rgba(255,255,255,.08); border-radius:12px; padding:12px; }
+    pre { margin:0; max-height:260px; overflow:auto; background:#0b1323; border:1px solid rgba(255,255,255,.08); border-radius:10px; padding:10px; font-size:12px; }
+
+    .top-right { display:flex; gap:8px; align-items:center; }
+    .logout { font-size:13px; color:var(--muted); }
+
+    /* Scanner */
+    #scanPreview { width:100%; max-height:320px; background:#000; border-radius:12px; }
+    #scanCanvas { display:none; }
+    .scan-status { font-size:12px; color:var(--muted); margin-top:6px; }
+      .qr-thumb { width:64px; height:64px; }
+    .qr-thumb canvas{ width:64px; height:64px; border-radius:8px; }
+  </style>
+</head>
+<body>
+  <!-- LOGIN SCREEN -->
+  <div id="loginRoot" class="login-root" aria-hidden="false">
+    <div class="login-box card">
+      <h2>Sign in — Stock Management</h2>
+      <p class="muted">Use the demo account <strong>admin / 1234</strong> or create your own offline account in LocalStorage.</p>
+      <form id="loginForm">
+        <div class="form-row">
+          <label>Username</label>
+          <input id="loginUser" type="text" placeholder="admin" autocomplete="username" required />
+        </div>
+        <div class="form-row">
+          <label>Password</label>
+          <input id="loginPass" type="password" placeholder="1234" autocomplete="current-password" required />
+        </div>
+        <div class="login-actions">
+          <button class="btn" type="submit">Sign in</button>
+          <button type="button" id="useDemo" class="btn secondary">Auto-fill Demo</button>
+        </div>
+        <div style="margin-top:10px;" class="muted">Want to change credentials? Open browser console and run <code>setDemoUser('username','password')</code></div>
+      </form>
+    </div>
+  </div>
+
+  <!-- APP (hidden until login) -->
+  <div id="app" style="display:none">
+    <header>
+      <div class="title">
+        <h1 style="margin:0">📦 Stock Management System</h1>
+        <span class="badge">LocalStorage • Offline • QR</span>
+      </div>
+      <div class="top-right">
+        <div class="logout" id="whoami"></div>
+        <button class="btn secondary" id="logoutBtn">Logout</button>
+      </div>
+    </header>
+
+    <div class="container grid">
+      <section class="card">
+        <form id="itemForm" class="form" autocomplete="off">
+          <h3>Add / Update Item</h3>
+          <div class="row">
+            <div>
+              <label for="name">Item Name</label>
+              <input id="name" placeholder="e.g., USB Cable" required />
+            </div>
+            <div>
+              <label for="sku">SKU / Code</label>
+              <input id="sku" placeholder="e.g., USB-001" />
+            </div>
+          </div>
+          <div class="row">
+            <div>
+              <label for="qty">Quantity</label>
+              <input id="qty" type="number" min="0" step="1" value="0" />
+            </div>
+            <div>
+              <label for="price">Unit Price</label>
+              <input id="price" type="number" min="0" step="0.01" placeholder="0.00" />
+            </div>
+          </div>
+          <div class="row">
+            <div>
+              <label for="cat">Category</label>
+              <input id="cat" placeholder="e.g., Cables" />
+            </div>
+            <div>
+              <label for="min">Reorder Level</label>
+              <input id="min" type="number" min="0" step="1" value="0" />
+            </div>
+          </div>
+          <div class="row">
+            <div>
+              <label for="batch">Batch No.</label>
+              <input id="batch" placeholder="e.g., BATCH-24A" />
+            </div>
+            <div>
+              <label for="expiry">Expiry Date</label>
+              <input id="expiry" type="date" />
+            </div>
+          </div>
+          <div class="row1">
+            <label for="loc">Warehouse / Shelf Location</label>
+            <input id="loc" placeholder="e.g., WH-1 / Aisle-3 / Shelf-B" />
+          </div>
+          <div class="row1" style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+            <button class="btn" type="submit">Save Item</button>
+            <button class="btn secondary" type="button" id="previewQrBtn">Preview QR (from form)</button>
+          </div>
+        </form>
+        <div class="form" style="border-top:1px solid rgba(255,255,255,.06);">
+          <h3 style="margin-top:0">Live QR Preview</h3>
+          <div style="display:flex; gap:16px; align-items:flex-start; flex-wrap:wrap;">
+            <div class="qrpanel">
+              <div id="liveQr"></div>
+              <div style="display:flex; gap:8px; margin-top:10px;">
+                <button class="btn" id="liveQrDownload">Download PNG</button>
+                <button class="btn secondary" id="liveQrCopy">Copy Payload</button>
+              </div>
+            </div>
+            <div style="flex:1; min-width:260px;">
+              <h4 style="margin:0 0 8px;">Payload (not saved yet)</h4>
+              <pre id="liveQrJson">Fill the form and click “Preview QR”.</pre>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="card">
+        <div class="toolbar">
+          <div class="search">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M21 21l-4.35-4.35" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="2"/></svg>
+            <input id="search" placeholder="Search by name, SKU, category, batch or location..."/>
+          </div>
+          <div class="spacer"></div>
+          <button class="btn secondary" id="scanQr">Scan QR</button>
+          <button class="btn secondary" id="exportCsv">Export CSV</button>
+          <button class="btn ghost" id="clearAll">Clear All</button>
+        </div>
+
+        <div class="statbar" id="stats">
+          <div class="stat"><div class="k">Total Items</div><div class="v" id="statCount">0</div></div>
+          <div class="stat"><div class="k">Total Qty</div><div class="v" id="statQty">0</div></div>
+          <div class="stat"><div class="k">Stock Value</div><div class="v" id="statValue">₹0.00</div></div>
+        </div>
+
+        <div class="tablewrap">
+          <table id="table">
+            <thead>
+              <tr>
+                <th data-k="name">Name ⬍</th>
+                <th data-k="sku">SKU</th>
+                <th data-k="category">Category</th>
+                <th data-k="batch">Batch</th>
+                <th data-k="expiry">Expiry</th>
+                <th data-k="location">Location</th>
+                <th data-k="qty">Qty</th>
+                <th data-k="price">Price</th>
+                <th data-k="min">Reorder</th>
+                <th>Total</th>
+                <th>QR</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="tbody">
+              <tr><td colspan="12" class="empty">No items yet. Add from the left form.</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="footerbar">
+          <span id="sortHint" style="color:var(--muted); font-size:12px; margin-right:auto;">Tip: Click headers to sort</span>
+          <button class="btn success" id="demoData">Load Demo Data</button>
+        </div>
+      </section>
+    </div>
+
+    <!-- Edit Modal -->
+    <dialog id="editModal">
+      <div class="modal-head">
+        <strong>Edit Item</strong>
+        <button class="btn secondary" id="closeModal">Close</button>
+      </div>
+      <div class="modal-body">
+        <form id="editForm" class="form">
+          <input type="hidden" id="editId" />
+          <div class="row">
+            <div>
+              <label for="editName">Item Name</label>
+              <input id="editName" required />
+            </div>
+            <div>
+              <label for="editSku">SKU / Code</label>
+              <input id="editSku" />
+            </div>
+          </div>
+          <div class="row">
+            <div>
+              <label for="editQty">Quantity</label>
+              <input id="editQty" type="number" min="0" step="1" />
+            </div>
+            <div>
+              <label for="editPrice">Unit Price</label>
+              <input id="editPrice" type="number" min="0" step="0.01" />
+            </div>
+          </div>
+          <div class="row">
+            <div>
+              <label for="editCat">Category</label>
+              <input id="editCat" />
+            </div>
+            <div>
+              <label for="editMin">Reorder Level</label>
+              <input id="editMin" type="number" min="0" step="1" />
+            </div>
+          </div>
+          <div class="row">
+            <div>
+              <label for="editBatch">Batch No.</label>
+              <input id="editBatch" />
+            </div>
+            <div>
+              <label for="editExpiry">Expiry Date</label>
+              <input id="editExpiry" type="date" />
+            </div>
+          </div>
+          <div class="row1">
+            <label for="editLoc">Warehouse / Shelf Location</label>
+            <input id="editLoc" />
+          </div>
+          <div class="row1">
+            <button class="btn" type="submit">Update</button>
+          </div>
+        </form>
+      </div>
+    </dialog>
+
+    <!-- QR Modal -->
+    <dialog id="qrModal">
+      <div class="modal-head">
+        <strong>QR Code — <span id="qrTitle"></span></strong>
+        <button class="btn secondary" id="closeQr">Close</button>
+      </div>
+      <div class="modal-body">
+        <div class="qrbox">
+          <div class="qrpanel">
+            <div id="qrContainer"></div>
+            <div style="display:flex; gap:8px; margin-top:10px;">
+              <button class="btn" id="downloadPng">Download PNG</button>
+              <button class="btn secondary" id="copyPayload">Copy Payload</button>
+            </div>
+          </div>
+          <div style="flex:1; min-width:260px;">
+            <h3 style="margin:0 0 8px;">Embedded Payload</h3>
+            <pre id="qrJson"></pre>
+          </div>
+        </div>
+      </div>
+    </dialog>
+
+    <!-- Scanner Modal -->
+    <dialog id="scanModal">
+      <div class="modal-head">
+        <strong>Scan QR Code</strong>
+        <button class="btn secondary" id="closeScan">Close</button>
+      </div>
+      <div class="modal-body">
+        <video id="scanPreview" playsinline></video>
+        <canvas id="scanCanvas"></canvas>
+        <div class="scan-status" id="scanStatus">Initializing camera…</div>
+        <div style="margin-top:10px; display:flex; gap:8px;">
+          <button class="btn" id="restartScan">Restart</button>
+        </div>
+      </div>
+    </dialog>
+
+  </div>
+
+  <script>
+    // --- AUTH (offline) ---
+    const DEMO_USER_KEY = 'sms_demo_user';
+    function getDemoUser(){ try{ return JSON.parse(localStorage.getItem(DEMO_USER_KEY)) || {user:'admin', pass:'1234'} }catch{ return {user:'admin', pass:'1234'} } }
+    function setDemoUser(u,p){ localStorage.setItem(DEMO_USER_KEY, JSON.stringify({user:u,pass:p})); console.log('Demo user set'); }
+    window.setDemoUser = setDemoUser;
+
+    function isAuthed(){ return !!localStorage.getItem('sms_authed'); }
+    function doLogin(user){ localStorage.setItem('sms_authed', user); }
+    function doLogout(){ localStorage.removeItem('sms_authed'); location.reload(); }
+
+    const $ = (q)=>document.querySelector(q); const $all=(q)=>[...document.querySelectorAll(q)];
+
+    const loginRoot = $('#loginRoot'); const appRoot = $('#app');
+    function showApp(){ loginRoot.style.display='none'; appRoot.style.display='block'; $('#whoami').textContent = 'Signed in as ' + (localStorage.getItem('sms_authed')||'user'); render(); }
+    function showLogin(){ loginRoot.style.display='flex'; appRoot.style.display='none'; }
+
+    document.addEventListener('DOMContentLoaded', ()=>{
+      if(isAuthed()) showApp(); else showLogin();
+
+      $('#useDemo').addEventListener('click', ()=>{ const du = getDemoUser(); $('#loginUser').value = du.user; $('#loginPass').value = du.pass; });
+
+      $('#loginForm').addEventListener('submit', (e)=>{
+        e.preventDefault(); const u = $('#loginUser').value.trim(); const p = $('#loginPass').value;
+        const du = getDemoUser();
+        if(u === du.user && p === du.pass){ doLogin(u); showApp(); } else { alert('Invalid credentials — try demo admin / 1234 or set a demo user via setDemoUser()'); }
+      });
+
+      $('#logoutBtn').addEventListener('click', ()=>{ if(confirm('Logout?')) doLogout(); });
+    });
+
+    // ----------------- The stock app logic -----------------
+    const uid = () => (crypto?.randomUUID ? crypto.randomUUID() : (Date.now()+""+Math.random()).replace('.',''));
+    const STORE_KEY = 'sms_items_v2_qr';
+    let items = load();
+    let sortState = { key: 'name', dir: 'asc' };
+
+    function load(){ try { return JSON.parse(localStorage.getItem(STORE_KEY)) || []; } catch { return []; } }
+    function persist(){ localStorage.setItem(STORE_KEY, JSON.stringify(items)); }
+
+    const money = (n)=> new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR' }).format(Number(n||0));
+
+    function computeStats(){
+      const count = items.length;
+      const qty = items.reduce((a,b)=>a + Number(b.qty||0), 0);
+      const value = items.reduce((a,b)=>a + Number(b.qty||0) * Number(b.price||0), 0);
+      $('#statCount').textContent = count;
+      $('#statQty').textContent = qty;
+      $('#statValue').textContent = money(value);
+    }
+
+    function render(){
+      computeStats();
+      const tbody = $('#tbody');
+      tbody.innerHTML = '';
+      const term = ($('#search').value||'').trim().toLowerCase();
+      let list = items.filter(it => [it.name, it.sku, it.category, it.batch, it.location].some(v => (v||'').toLowerCase().includes(term)));
+
+      list.sort((a,b)=>{
+        const k = sortState.key; const dir = sortState.dir === 'asc' ? 1 : -1;
+        let va = a[k]; let vb = b[k];
+        if(['qty','price','min'].includes(k)){ va = Number(va||0); vb = Number(vb||0); }
+        return (va>vb?1:va<vb?-1:0) * dir;
+      });
+
+      if(list.length === 0){
+        const tr = document.createElement('tr');
+        tr.innerHTML = `<td colspan="12" class="empty">No matching items.</td>`;
+        tbody.appendChild(tr); return;
+      }
+
+      for(const it of list){
+        const low = Number(it.qty||0) <= Number(it.min||0);
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${it.name}</td>
+          <td><span class="pill">${it.sku||'-'}</span></td>
+          <td>${it.category||'-'}</td>
+          <td>${it.batch||'-'}</td>
+          <td>${it.expiry||'-'}</td>
+          <td>${it.location||'-'}</td>
+          <td>
+            <div class="qtybox">
+              <button title="Decrease" data-act="dec" data-id="${it.id}">-</button>
+              <span>${it.qty||0}</span>
+              <button title="Increase" data-act="inc" data-id="${it.id}">+</button>
+            </div>
+          </td>
+          <td>${money(it.price||0)}</td>
+          <td>${low?`<span class=\"pill\" style=\"border-color:#fca5a5;background:rgba(239,68,68,.12);color:#fecaca\">${it.min||0}</span>`:(it.min||0)}</td>
+          <td><strong>${money((it.qty||0)*(it.price||0))}</strong></td>
+          <td style="display:flex;align-items:center;gap:8px;">
+            <div class="qr-thumb" id="qr-thumb-${it.id}"></div>
+            <button class="btn" data-act="qr" data-id="${it.id}">QR</button>
+          </td>
+          <td>
+            <button class="btn secondary" data-act="edit" data-id="${it.id}">Edit</button>
+            <button class="btn danger" data-act="del" data-id="${it.id}">Delete</button>
+          </td>
+        `;
+        tbody.appendChild(tr);
+        // create/refresh tiny QR preview (non-blocking)
+        createThumb(it);
+      }
+    }
+
+    function upsert(obj){
+      const idx = items.findIndex(x => x.id === obj.id);
+      if(idx === -1) items.push(obj); else items[idx] = obj;
+      persist(); render();
+    }
+
+    function del(id){ items = items.filter(x => x.id !== id); persist(); render(); }
+
+    function adjust(id, delta){ const it = items.find(x => x.id === id); if(!it) return; it.qty = Math.max(0, Number(it.qty||0) + delta); persist(); render(); }
+
+    // Form submit
+    $('#itemForm').addEventListener('submit', (e)=>{
+      e.preventDefault();
+      const obj = {
+        id: uid(), name: $('#name').value.trim(), sku: $('#sku').value.trim(), qty: Number($('#qty').value || 0), price: Number($('#price').value || 0), category: $('#cat').value.trim(), min: Number($('#min').value || 0), batch: $('#batch').value.trim(), expiry: $('#expiry').value||'', location: $('#loc').value.trim(), createdAt: Date.now(), token: ''
+      };
+      if(!obj.name){ alert('Item name required'); return; }
+      upsert(obj);
+      e.target.reset(); $('#qty').value = 0; $('#min').value = 0;
+    });
+
+    // Table actions
+    $('#tbody').addEventListener('click', (e)=>{
+      const btn = e.target.closest('button'); if(!btn) return; const act = btn.dataset.act; const id = btn.dataset.id;
+      if(act==='del'){ if(confirm('Delete this item?')) del(id); }
+      if(act==='inc'){ adjust(id, +1); }
+      if(act==='dec'){ adjust(id, -1); }
+      if(act==='edit'){
+        const it = items.find(x => x.id === id); if(!it) return;
+        $('#editId').value = it.id; $('#editName').value = it.name||''; $('#editSku').value = it.sku||''; $('#editQty').value = it.qty||0; $('#editPrice').value = it.price||0; $('#editCat').value = it.category||''; $('#editMin').value = it.min||0; $('#editBatch').value = it.batch||''; $('#editExpiry').value = it.expiry||''; $('#editLoc').value = it.location||''; $('#editModal').showModal();
+      }
+      if(act==='qr'){
+        const it = items.find(x => x.id === id); if(!it) return; openQr(it);
+      }
+    });
+
+    // Edit form submit
+    $('#editForm').addEventListener('submit', (e)=>{
+      e.preventDefault(); const id = $('#editId').value; const idx = items.findIndex(x => x.id === id); if(idx===-1) return;
+      items[idx] = { ...items[idx], name: $('#editName').value.trim(), sku: $('#editSku').value.trim(), qty: Number($('#editQty').value||0), price: Number($('#editPrice').value||0), category: $('#editCat').value.trim(), min: Number($('#editMin').value||0), batch: $('#editBatch').value.trim(), expiry: $('#editExpiry').value||'', location: $('#editLoc').value.trim() };
+      persist(); render(); $('#editModal').close();
+    });
+    $('#closeModal').addEventListener('click', ()=> $('#editModal').close());
+
+    // Search + sort
+    $('#search').addEventListener('input', render);
+    $all('thead th').forEach(th => th.addEventListener('click', ()=>{ const key = th.dataset.k; if(!key) return; if(sortState.key === key){ sortState.dir = sortState.dir === 'asc' ? 'desc' : 'asc'; } else { sortState = { key, dir: 'asc' }; } render(); }));
+
+    // Demo data
+    $('#demoData').addEventListener('click', ()=>{
+      if(items.length>0 && !confirm('This will add demo items along with your existing items. Continue?')) return;
+      const demo = [
+        { id: uid(), name: 'Paracetamol 500mg', sku: 'MED-PCM-500', qty: 100, price: 1.8, category: 'Medicine', min: 40, batch: 'P24-09A', expiry: '2026-09-30', location: 'WH-2/A3/S-B', createdAt: Date.now(), token: '' },
+        { id: uid(), name: 'ESP32 DevKit', sku: 'ESP-32', qty: 12, price: 399, category: 'Boards', min: 6, batch: 'E32-07', expiry: '', location: 'WH-1/A1/S-A', createdAt: Date.now(), token: '' },
+        { id: uid(), name: 'Resistor Pack 1kΩ', sku: 'R-1K', qty: 120, price: 1.5, category: 'Components', min: 50, batch: 'R1K-24', expiry: '', location: 'WH-1/A2/S-C', createdAt: Date.now(), token: '' },
+      ]; items = items.concat(demo); persist(); render();
+    });
+
+    // Export CSV
+    $('#exportCsv').addEventListener('click', ()=>{
+      const headers = ['name','sku','category','batch','expiry','location','qty','price','min','id','token'];
+      const rows = [headers.join(',')].concat(items.map(it => headers.map(h => { const v = (it[h]??'').toString().replaceAll('"','""'); return /[",\n]/.test(v) ? '"'+v+'"' : v; }).join(',')));
+      const blob = new Blob([rows.join('\n')], { type: 'text/csv' }); const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'stock_export.csv'; a.click(); URL.revokeObjectURL(a.href);
+    });
+
+    // Clear all
+    $('#clearAll').addEventListener('click', ()=>{ if(confirm('Clear ALL items? This cannot be undone.')){ items = []; persist(); render(); } });
+
+    // ===== QR FEATURES =====
+    function buildFormPreviewPayload(){
+      const temp = {
+        id: 'TEMP-'+uid().slice(0,8),
+        name: ($('#name').value||'').trim(),
+        sku: ($('#sku').value||'').trim(),
+        batch: ($('#batch').value||'').trim(),
+        expiry: $('#expiry').value||'',
+        location: ($('#loc').value||'').trim(),
+        createdAt: Date.now(), token: ''
+      };
+      return buildPayload(temp);
+    }
+
+    function renderLiveQr(payload){
+      const box = document.getElementById('liveQr');
+      if(!box) return; box.innerHTML='';
+      if(!payload || !payload.name){
+        document.getElementById('liveQrJson').textContent = 'Enter at least Item Name and click “Preview QR”.';
+        return;
+      }
+      try{
+        new QRCode(box, { text: JSON.stringify(payload), width: 220, height: 220, correctLevel: QRCode.CorrectLevel.M });
+        document.getElementById('liveQrJson').textContent = JSON.stringify(payload, null, 2);
+      }catch(e){ console.warn(e); }
+    }
+
+    const previewBtn = document.getElementById('previewQrBtn');
+    if(previewBtn){
+      previewBtn.addEventListener('click', async ()=>{
+        // create a pseudo token for preview only
+        const p = buildFormPreviewPayload();
+        p.token = (await sha256Hex(p.pid+Date.now())).slice(0,24);
+        renderLiveQr(p);
+      });
+    }
+
+    const liveDl = document.getElementById('liveQrDownload');
+    const liveCp = document.getElementById('liveQrCopy');
+    if(liveDl){ liveDl.addEventListener('click', ()=>{
+      const canvas = document.querySelector('#liveQr canvas');
+      if(!canvas){ alert('Generate a preview first.'); return; }
+      const url = canvas.toDataURL('image/png'); const a = document.createElement('a'); a.href=url; a.download='preview-qr.png'; a.click();
+    }); }
+    if(liveCp){ liveCp.addEventListener('click', async ()=>{
+      const txt = document.getElementById('liveQrJson').textContent||'';
+      if(!txt.startsWith('{')){ alert('Generate a preview first.'); return; }
+      await navigator.clipboard.writeText(txt); alert('Payload copied.');
+    }); }
+    async function sha256Hex(str){
+      const enc = new TextEncoder().encode(str);
+      const buf = await crypto.subtle.digest('SHA-256', enc);
+      const bytes = Array.from(new Uint8Array(buf));
+      return bytes.map(b => b.toString(16).padStart(2,'0')).join('');
+    }
+
+    function buildPayload(it){
+      return {
+        v:1,
+        pid: it.id,
+        sku: it.sku||'',
+        name: it.name||'',
+        batch: it.batch||'',
+        expiry: it.expiry||'',
+        location: it.location||'',
+        ts: Date.now(),
+        token: it.token||''
+      };
+    }
+
+    async function ensureToken(it){
+      if(it.token) return it.token;
+      const salt = uid();
+      const base = [it.id, it.batch||'', it.expiry||'', it.location||'', it.createdAt||'', salt].join('|');
+      const hex = await sha256Hex(base);
+      it.token = hex.slice(0, 24); // short verification token
+      persist();
+      return it.token;
+    }
+
+    async function openQr(it){
+      await ensureToken(it);
+      const payload = buildPayload(it);
+      payload.token = it.token;
+      const text = JSON.stringify(payload);
+      $('#qrTitle').textContent = `${it.name} (${it.sku||it.id.slice(0,6)})`;
+      $('#qrJson').textContent = JSON.stringify(payload, null, 2);
+      $('#qrContainer').innerHTML = '';
+      const qrel = document.createElement('div'); qrel.id = 'qrcode-el'; $('#qrContainer').appendChild(qrel);
+      new QRCode(qrel, { text, width: 220, height: 220, correctLevel: QRCode.CorrectLevel.M });
+      $('#qrModal').showModal();
+
+      // Copy payload
+      $('#copyPayload').onclick = async ()=>{ await navigator.clipboard.writeText(text); alert('Payload copied to clipboard'); };
+
+      // Download PNG
+      $('#downloadPng').onclick = ()=>{
+        const canvas = qrel.querySelector('canvas');
+        const url = canvas.toDataURL('image/png');
+        const a = document.createElement('a'); a.href = url; a.download = `${(it.sku||it.name||'item')}-qr.png`; a.click();
+      };
+    }
+
+    $('#closeQr').addEventListener('click', ()=> $('#qrModal').close());
+
+    async function createThumb(it){
+      await ensureToken(it);
+      const el = document.getElementById(`qr-thumb-${it.id}`);
+      if(!el) return;
+      el.innerHTML = '';
+      const payload = buildPayload(it); payload.token = it.token;
+      try { new QRCode(el, { text: JSON.stringify(payload), width: 64, height: 64, correctLevel: QRCode.CorrectLevel.L }); }
+      catch(err){ console.warn('QR thumb error', err); }
+    }
+
+    // ===== QR SCANNER =====
+    const scanBtn = $('#scanQr');
+    const scanModal = $('#scanModal');
+    const scanVideo = $('#scanPreview');
+    const scanCanvas = $('#scanCanvas');
+    const scanStatus = $('#scanStatus');
+    let scanStream = null; let raf = null;
+
+    async function startScanner(){
+      try{
+        scanStatus.textContent = 'Requesting camera…';
+        scanStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: 'environment' } }, audio: false });
+        scanVideo.srcObject = scanStream; await scanVideo.play();
+        scanStatus.textContent = 'Point the camera at a QR code.';
+        tick();
+      }catch(err){
+        console.error(err);
+        scanStatus.textContent = 'Could not access camera. Check permissions or use a device with a camera.';
+      }
+    }
+
+    function stopScanner(){
+      if(raf) cancelAnimationFrame(raf); raf = null;
+      if(scanStream){ scanStream.getTracks().forEach(t=>t.stop()); scanStream = null; }
+      scanVideo.srcObject = null;
+    }
+
+    function tick(){
+      if(!scanVideo.videoWidth){ raf = requestAnimationFrame(tick); return; }
+      scanCanvas.width = scanVideo.videoWidth; scanCanvas.height = scanVideo.videoHeight;
+      const ctx = scanCanvas.getContext('2d');
+      ctx.drawImage(scanVideo, 0, 0, scanCanvas.width, scanCanvas.height);
+      const img = ctx.getImageData(0,0,scanCanvas.width, scanCanvas.height);
+      const code = jsQR(img.data, img.width, img.height, { inversionAttempts: 'dontInvert' });
+      if(code && code.data){ onQrDetected(code.data); return; }
+      raf = requestAnimationFrame(tick);
+    }
+
+    function onQrDetected(txt){
+      stopScanner();
+      scanStatus.textContent = 'QR detected!';
+      let data = null;
+      try{ data = JSON.parse(txt); }
+      catch{ alert('Scanned data is not valid JSON. Raw: '+txt); scanModal.close(); return; }
+      if(!data || !data.pid){ alert('QR payload missing pid.'); scanModal.close(); return; }
+
+      const found = items.find(x => x.id === data.pid || (data.sku && x.sku === data.sku));
+      if(found){
+        // Optional: verify token
+        if(found.token && data.token && found.token !== data.token){
+          alert('Warning: Token mismatch! This QR may not belong to the current item.');
+        }
+        // Open edit with prefill
+        $('#editId').value = found.id; $('#editName').value = found.name||''; $('#editSku').value = found.sku||''; $('#editQty').value = found.qty||0; $('#editPrice').value = found.price||0; $('#editCat').value = found.category||''; $('#editMin').value = found.min||0; $('#editBatch').value = found.batch||''; $('#editExpiry').value = found.expiry||''; $('#editLoc').value = found.location||''; $('#editModal').showModal();
+        scanModal.close();
+        // highlight row
+        setTimeout(()=>{
+          const row = [...document.querySelectorAll('#tbody tr')].find(tr => tr.querySelector('[data-id]')?.dataset?.id === found.id);
+          row?.scrollIntoView({behavior:'smooth', block:'center'});
+        }, 200);
+      } else {
+        if(confirm('Item not found in storage. Do you want to add it now?')){
+          const obj = { id: data.pid, name: data.name||'', sku: data.sku||'', qty: 0, price: 0, category: '', min: 0, batch: data.batch||'', expiry: data.expiry||'', location: data.location||'', createdAt: Date.now(), token: data.token||'' };
+          upsert(obj);
+          alert('Item added from QR. You can edit details.');
+        }
+        scanModal.close();
+      }
+    }
+
+    scanBtn.addEventListener('click', ()=>{ scanModal.showModal(); startScanner(); });
+    $('#closeScan').addEventListener('click', ()=>{ stopScanner(); scanModal.close(); });
+    $('#restartScan').addEventListener('click', ()=>{ stopScanner(); startScanner(); });
+
+    // First paint will happen on showApp()
+  </script>
+
+  <!-- QR Generator (qrcodejs) -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  <!-- QR Scanner decoder (jsQR) -->
+  <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
+</body>
+</html>
